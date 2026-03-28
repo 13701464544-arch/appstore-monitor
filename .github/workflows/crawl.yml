@@ -10,21 +10,23 @@ permissions:
 jobs:
   run:
     runs-on: ubuntu-22.04
-    env:
-      ACTIONS_ALLOW_UNSECURE_NODE_VERSION: true
     steps:
-      - name: 检出代码
-        uses: actions/checkout@v4
-
-      - name: 安装依赖并运行
-        run: |
-          python3 -m pip install requests
-          python3 spider.py
-
-      - name: 提交更新
+      - name: 直接克隆仓库（彻底不用JS Action）
         run: |
           git config --global user.name "bot"
           git config --global user.email "bot@github.com"
+          git clone https://github.com/${{ github.repository }}.git repo
+          cd repo
+
+      - name: 运行爬虫
+        run: |
+          cd repo
+          python3 -m pip install requests
+          python3 spider.py
+
+      - name: 提交并推送
+        run: |
+          cd repo
           git add data.json
           git diff --quiet || git commit -m "自动更新情报"
-          git push
+          git push https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:main
