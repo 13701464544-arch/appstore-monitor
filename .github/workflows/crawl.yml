@@ -1,4 +1,4 @@
-name: 每60分钟自动爬取应用商店情报
+name: 每60分钟自动爬取
 on:
   schedule:
     - cron: "*/60 * * * *"
@@ -11,22 +11,27 @@ jobs:
   run:
     runs-on: ubuntu-22.04
     steps:
-      - name: 直接克隆仓库（彻底不用JS Action）
-        run: |
-          git config --global user.name "bot"
-          git config --global user.email "bot@github.com"
-          git clone https://github.com/${{ github.repository }}.git repo
-          cd repo
+      - name: Checkout
+        uses: actions/checkout@v4
+        env:
+          ACTIONS_ALLOW_UNSECURE_NODE_VERSION: true
 
-      - name: 运行爬虫
-        run: |
-          cd repo
-          python3 -m pip install requests
-          python3 spider.py
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+        env:
+          ACTIONS_ALLOW_UNSECURE_NODE_VERSION: true
 
-      - name: 提交并推送
+      - name: Install & Run
         run: |
-          cd repo
-          git add data.json
-          git diff --quiet || git commit -m "自动更新情报"
-          git push https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:main
+          python -m pip install requests
+          python spider.py
+
+      - name: Push
+        uses: EndBug/add-and-commit@v9
+        with:
+          message: "自动更新情报"
+          add: "data.json"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
