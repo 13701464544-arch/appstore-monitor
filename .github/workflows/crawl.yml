@@ -1,4 +1,4 @@
-name: 每60分钟自动爬取
+name: 每60分钟自动爬取应用商店情报
 on:
   schedule:
     - cron: "*/60 * * * *"
@@ -11,11 +11,12 @@ jobs:
   run:
     runs-on: ubuntu-22.04
     env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      ACTIONS_ALLOW_UNSECURE_NODE_VERSION: true
     steps:
-      - uses: actions/checkout@v4
+      - name: 检出代码
+        uses: actions/checkout@v4
 
-      - name: 安装依赖 & 运行
+      - name: 安装依赖并运行
         run: |
           python3 -m pip install requests
           python3 spider.py
@@ -25,5 +26,5 @@ jobs:
           git config --global user.name "bot"
           git config --global user.email "bot@github.com"
           git add data.json
-          git diff --quiet && git diff --staged --quiet || git commit -m "自动更新"
+          git diff --quiet || git commit -m "自动更新情报"
           git push
