@@ -1,4 +1,4 @@
-name: 每60分钟自动爬取应用商店情报
+name: 自动更新
 on:
   schedule:
     - cron: "*/60 * * * *"
@@ -9,22 +9,19 @@ permissions:
 
 jobs:
   run:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
-      - name: 直接克隆 + 运行
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run
         run: |
-          # 克隆代码
-          git clone https://github.com/${{ github.repository }}.git work
-          cd work
-          
-          # 安装依赖并运行爬虫
-          python3 -m pip install requests
           python3 spider.py
-          
-          # 提交更新（无权限错误）
+
+      - name: Commit
+        run: |
           git config --global user.name "bot"
-          git config --global user.email "bot@github.com"
+          git config --global user.email "bot@example.com"
           git add data.json
-          git diff --quiet && exit 0 || true
-          git commit -m "自动更新"
-          git push https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:main
+          git commit -m "update" || true
+          git push
