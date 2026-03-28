@@ -9,28 +9,19 @@ permissions:
 
 jobs:
   run:
-    runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    runs-on: ubuntu-22.04
     steps:
-      - name: 检出代码
-        uses: actions/checkout@v4
-
-      - name: 设置Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: 安装依赖
-        run: pip install requests
-
-      - name: 运行爬虫
-        run: python spider.py
-
+      - name: 安装依赖 & 运行
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip
+          pip3 install requests
+          python3 spider.py
+          
       - name: 提交更新
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "bot"
+          git config --global user.email "bot@github.com"
           git add data.json
-          git commit -m "数据自动更新 $(date +'%Y-%m-%d %H:%M')"
+          git commit -m "自动更新"
           git push
