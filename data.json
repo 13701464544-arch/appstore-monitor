@@ -1,4 +1,40 @@
 {
-  "update_time": "2026-03-28 00:00:00",
-  "news": []
+  "update_time": "2026-03-28 11:10:17",
+  "news": [
+    {
+      "tag": "App Store",
+      "title": "App Store 近7天政策与审核动态",
+      "summary": "[App Store] App Store 政策更新...",
+      "impact": "影响iOS审核、上架合规、流量分发",
+      "time": "2026-03-28"
+    },
+    {
+      "tag": "Google Play",
+      "title": "Google Play 近7天政策与审核动态",
+      "summary": "[Google Play] Google Play 政策更新...",
+      "impact": "影响Google Play上架政策、全球分发",
+      "time": "2026-03-28"
+    },
+    {
+      "tag": "OPPO软件商店",
+      "title": "OPPO软件商店 近7天政策与审核动态",
+      "summary": "[OPPO软件商店] OPPO软件商店 政策更新...",
+      "impact": "影响OPPO商店审核、合规、推荐策略",
+      "time": "2026-03-28"
+    },
+    {
+      "tag": "VIVO应用商店",
+      "title": "VIVO应用商店 近7天政策与审核动态",
+      "summary": "[VIVO应用商店] VIVO应用商店 政策更新...",
+      "impact": "影响VIVO商店上架、流量、推荐策略",
+      "time": "2026-03-28"
+    },
+    {
+      "tag": "小米应用商店",
+      "title": "小米应用商店 近7天政策与审核动态",
+      "summary": "[小米应用商店] 小米应用商店 政策更新...",
+      "impact": "影响小米商店算法、审核、流量分配",
+      "time": "2026-03-28"
+    }
+  ]
 }
