@@ -1,10 +1,45 @@
-<div class="card">
-  <div class="tag">${item.tag}</div>
-  <div class="title-text">${item.title}</div>
-  <div class="summary"><strong>核心提炼：</strong>${item.summary}</div>
-  <div class="impact"><strong>影响分析：</strong>${item.impact}</div>
-  <div class="url" style="margin-top:8px;font-size:13px;color:#1677ff;">
-    <strong>原文链接：</strong>
-    <a href="${item.url}" target="_blank" style="color:#1677ff;text-decoration:none;">${item.url}</a>
+<!DOCTYPE html>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>应用商店情报监控</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Arial;background:#f7f8fa;padding:20px}
+.container{max-width:900px;margin:0 auto}
+.header{background:#1677ff;color:white;padding:16px 20px;border-radius:12px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center}
+.title{font-size:18px;font-weight:600}
+.info{font-size:14px;opacity:.9}
+.card{background:white;border-radius:12px;padding:20px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.tag{display:inline-block;padding:4px 10px;border-radius:6px;font-size:13px;background:#e6f0ff;color:#1677ff;margin-bottom:10px}
+.title-text{font-size:16px;font-weight:600;margin-bottom:10px;color:#222}
+.summary{font-size:14px;color:#444;margin-bottom:8px;line-height:1.5}
+.impact{font-size:14px;color:#666;line-height:1.5}
+.url{margin-top:8px;font-size:13px}
+.url a{color:#1677ff;text-decoration:none}
+</style>
+
+<div class="container">
+  <div class="header">
+    <div class="title">应用生态 - 应用商店情报监控</div>
+    <div class="info">
+      更新：<span id="update-time">--</span><br>
+      下次刷新：<span id="countdown">--</span>
+    </div>
   </div>
+  <div id="list"></div>
 </div>
+
+<script>
+const REFRESH = 60*60*1000;
+function startCountdown(){let t=REFRESH;setInterval(()=>{t-=1000;if(t<=0){location.reload();return}
+const m=Math.floor(t/60000),s=Math.floor((t%60000)/1000);document.getElementById("countdown").textContent=`${m}分${s}秒`},1000)}
+async function loadData(){const r=await fetch("data.json");const d=await r.json();document.getElementById("update-time").textContent=d.update_time;const list=document.getElementById("list");d.news.forEach(i=>{list.innerHTML+=`
+<div class="card">
+  <div class="tag">${i.tag}</div>
+  <div class="title-text">${i.title}</div>
+  <div class="summary"><strong>核心提炼：</strong>${i.summary}</div>
+  <div class="impact"><strong>影响分析：</strong>${i.impact}</div>
+  <div class="url"><strong>原文链接：</strong><a href="${i.url}" target="_blank">${i.url}</a></div>
+</div>`})}
+window.onload=()=>{loadData();startCountdown()}
+</script>
