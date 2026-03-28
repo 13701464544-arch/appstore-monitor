@@ -1,91 +1,86 @@
 <!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>应用生态 - 抬头看路 | 应用商店情报中心</title>
+<title>应用生态 - 抬头看路 | 应用商店情报</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f7f8fa;color:#222;padding:20px;line-height:1.6}
 .container{max-width:1000px;margin:0 auto}
 .header-bar{background:#165DFF;color:white;padding:14px 20px;border-radius:12px;margin-bottom:16px;font-size:16px;font-weight:600;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
-.time-info{font-size:13px;font-weight:normal;opacity:.95}
+.time-info{font-size:13px}
 #countdown{color:#ffeb3b}
-.head{margin-bottom:20px}
-.title{font-size:22px;margin-bottom:8px}
-.desc{color:#666;font-size:14px}
-.loading{padding:30px;text-align:center;color:#666}
-.item{background:#fff;border-radius:12px;padding:20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
-.tag{display:inline-block;background:#eef;padding:2px 8px;border-radius:6px;font-size:12px;color:#36c;margin-right:8px}
+.item{background:#fff;border-radius:12px;padding:20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
+.tag{display:inline-block;background:#eef;padding:2px 8px;border-radius:6px;font-size:12px;color:#36c}
 .item-title{font-size:18px;font-weight:600;margin:8px 0}
-.summary{background:#f0f9ff;border-left:3px solid #165DFF;padding:10px 14px;margin:10px 0;border-radius:0 6px 6px 0;font-size:15px}
-.summary strong{color:#165DFF}
-.meta{font-size:13px;color:#888;margin-bottom:12px}
-.impact{background:#edf5ff;border-left:3px solid #3683e0;padding:10px 14px;border-radius:0 6px 6px 0;margin:10px 0;font-size:14px}
-.impact strong{color:#3683e0}
-.link{color:#3683e0;text-decoration:none;font-size:14px}
-.link:hover{text-decoration:underline}
-.footer{margin-top:40px;text-align:center;color:#999;font-size:13px}
+.summary{background:#f0f9ff;border-left:3px solid #165DFF;padding:10px 14px;margin:10px 0;border-radius:0 6px 6px 0}
+.impact{background:#edf5ff;border-left:3px solid #3683e0;padding:10px 14px;margin:10px 0;border-radius:0 6px 6px 0}
 </style>
 
 <div class="container">
   <div class="header-bar">
     <div>应用生态 - 抬头看路</div>
     <div class="time-info">
-      数据更新：<span id="update-time">加载中...</span>｜
-      下次更新：<span id="countdown">计算中...</span>
+      更新时间：<span id="update-time">--</span>｜
+      下次自动刷新：<span id="countdown">--</span>
     </div>
   </div>
-  <div class="head">
-    <h1 class="title">应用商店全网情报监控</h1>
-    <p class="desc">自动抓取：App Store、Google Play、OPPO、VIVO、小米 政策/榜单/合规/流量/算法动态</p>
-  </div>
-  <div id="loading" class="loading">正在加载每日最新情报...</div>
+
+  <div id="loading">加载中...</div>
   <div id="list"></div>
-  <div class="footer">每日自动更新｜AI自动摘要｜AI影响分析｜多源聚合</div>
 </div>
 
 <script>
-const ut = document.getElementById("update-time");
-const cd = document.getElementById("countdown");
-const list = document.getElementById("list");
-const loading = document.getElementById("loading");
+const updateTime = document.getElementById('update-time');
+const countdown = document.getElementById('countdown');
+const listEl = document.getElementById('list');
+const loading = document.getElementById('loading');
 
-async function loadData() {
+// 每 60 分钟自动刷新页面
+const REFRESH_INTERVAL = 60 * 60 * 1000;
+
+// 倒计时
+function startCountdown() {
+  let remaining = REFRESH_INTERVAL;
+  const timer = setInterval(() => {
+    remaining -= 1000;
+    if (remaining <= 0) {
+      clearInterval(timer);
+      window.location.reload();
+      return;
+    }
+    const m = Math.floor(remaining / 60000);
+    const s = Math.floor((remaining % 60000) / 1000);
+    countdown.textContent = `${m}分${s}秒`;
+  }, 1000);
+}
+
+// 加载数据
+async function load() {
   try {
-    const res = await fetch("https://raw.githubusercontent.com/13701464544-arch/appstore-monitor/main/data.json");
+    const res = await fetch('https://raw.githubusercontent.com/13701464544-arch/appstore-monitor/main/data.json');
     const data = await res.json();
-    ut.textContent = data.update_time;
-    loading.style.display = "none";
-    let html = "";
+    updateTime.textContent = data.update_time;
+    loading.style.display = 'none';
+
+    let html = '';
     data.news.forEach(item => {
       html += `
 <div class="item">
   <span class="tag">${item.tag}</span>
   <div class="item-title">${item.title}</div>
   <div class="summary"><strong>核心提炼：</strong>${item.summary}</div>
-  <div class="meta">${item.source} · ${item.time}</div>
   <div class="impact"><strong>影响分析：</strong>${item.impact}</div>
-  <a href="${item.link}" target="_blank" class="link">查看原文</a>
 </div>`;
     });
-    list.innerHTML = html;
+    listEl.innerHTML = html;
   } catch (e) {
-    loading.innerText = "加载完成，展示最新情报";
+    loading.textContent = '加载完成';
   }
 }
 
-function countdown() {
-  const now = new Date();
-  const next = new Date(now);
-  next.setDate(now.getDate() + 1);
-  next.setHours(0, 0, 0, 0);
-  const diff = next - now;
-  const h = Math.floor(diff / 3600000);
-  const m = Math.floor((diff % 3600000) / 60000);
-  const s = Math.floor((diff % 60000) / 1000);
-  cd.textContent = `${h}h ${m}m ${s}s`;
-}
-setInterval(countdown, 1000);
-countdown();
-window.onload = loadData;
+window.onload = () => {
+  load();
+  startCountdown();
+};
 </script>
 </html>
