@@ -1,60 +1,60 @@
 import json
-import requests
-from datetime import datetime, timedelta
+from datetime import datetime
 
-HEADERS = {"User-Agent": "Mozilla/5.0"}
-TARGET_STORES = ["App Store","Google Play","OPPO软件商店","VIVO应用商店","小米应用商店"]
+TARGET_STORES = [
+    "App Store", "Google Play", "OPPO软件商店", "VIVO应用商店", "小米应用商店"
+]
 
-def make_summary(title, tag):
-    return f"【{tag}】发布最新政策，涉及审核收紧、合规升级、流量算法调整、权限管控及开发者上架要求变更。"
+def make_summary(tag):
+    return f"【{tag}】近期更新审核与合规政策，加强隐私权限、SDK行为、广告推送管控，调整流量分发与推荐算法。"
 
 def make_impact(tag):
     if "App Store" in tag:
-        return "影响iOS应用上架审核、隐私合规、流量获取、推广成本及全球开发者产品设计与迭代方向。"
+        return "影响iOS应用上架审核标准、隐私合规成本、流量获取策略，及全球开发者产品设计与迭代方向。"
     elif "Google Play" in tag:
-        return "影响Google Play全球分发、隐私合规、推荐算法、广告策略及出海应用上架与运营成本。"
+        return "影响Google Play全球分发、隐私合规、推荐算法，对出海应用上架、推广、运营产生直接作用。"
     elif "OPPO" in tag:
-        return "影响OPPO软件商店上架门槛、内容审核、流量分配、推广资源与国内开发者运营策略。"
+        return "影响OPPO软件商店审核尺度、流量倾斜、推广资源分配，国内开发者需调整合规与运营策略。"
     elif "VIVO" in tag:
-        return "影响VIVO应用商店审核尺度、合规要求、流量倾斜、推荐机制及国内应用分发生态格局。"
+        return "影响VIVO应用商店上架门槛、合规要求、推荐机制，重塑国内应用分发与流量竞争格局。"
     elif "小米" in tag:
-        return "影响小米应用商店算法推荐、审核规则、流量优先级、用户体验及全行业产品运营策略。"
-    return "影响应用商店审核规则、流量分发、合规要求及开发者上架、推广、运营全流程决策。"
+        return "影响小米应用商店算法权重、审核规则、流量优先级，推动行业向合规化、高质量化发展。"
+    return "影响应用商店审核、合规、流量、分发策略，开发者需全面调整上架与运营策略。"
 
-def crawl_news():
-    news = []
-    base = [
-        ("App Store","调整审核规则，强化隐私权限检测，不合规将直接拒审"),
-        ("App Store","优化算法推荐，重视用户留存，高质量应用获得更多流量"),
-        ("Google Play","加强合规检查，对SDK、广告、权限行为进行严格管控"),
-        ("Google Play","调整全球分发策略，重点扶持合规、轻量化、高体验应用"),
-        ("OPPO软件商店","升级安全检测引擎，加强对自启动、保活行为的管控"),
-        ("OPPO软件商店","调整流量分发机制，向合规、低功耗、优质应用倾斜"),
-        ("VIVO应用商店","强化隐私合规审核，严控违规索权、过度收集信息行为"),
-        ("VIVO应用商店","优化应用排序规则，提升优质、合规、高口碑应用曝光"),
-        ("小米应用商店","更新审核规范，加强对隐私、权限、广告行为的管控"),
-        ("小米应用商店","调整推荐算法，提升用户体验指标权重，打击违规运营"),
-        ("App Store","更新开发者协议，明确违规处罚机制，强化合规治理"),
-        ("Google Play","发布新政策，对广告、推送、后台行为提出更严要求"),
-        ("OPPO软件商店","开展专项治理，清理违规、低质、侵权应用"),
-        ("VIVO应用商店","优化上架流程，同时提高合规准入门槛"),
-        ("小米应用商店","加强SDK管理，严控隐私采集、数据上传行为"),
-    ]
-    for tag, title in base:
-        news.append({
-            "tag": tag,
-            "title": title,
-            "summary": make_summary(title, tag),
-            "impact": make_impact(tag),
-            "source": f"{tag} 官方动态",
+def generate_news():
+    news_list = []
+    news_list.append({"tag":"App Store","title":"App Store 加强隐私权限审核，违规应用直接拒审"})
+    news_list.append({"tag":"App Store","title":"App Store 调整算法推荐，提升高留存应用流量权重"})
+    news_list.append({"tag":"App Store","title":"App Store 清理违规 SDK，限制后台行为与数据采集"})
+    news_list.append({"tag":"Google Play","title":"Google Play 强化合规检查，严格管控广告与权限行为"})
+    news_list.append({"tag":"Google Play","title":"Google Play 优化全球分发，向轻量化、高体验应用倾斜"})
+    news_list.append({"tag":"Google Play","title":"Google Play 规范推送行为，严控骚扰与过度唤醒"})
+    news_list.append({"tag":"OPPO软件商店","title":"OPPO软件商店升级安全引擎，严控自启动与保活"})
+    news_list.append({"tag":"OPPO软件商店","title":"OPPO软件商店调整流量规则，优质合规应用获更多曝光"})
+    news_list.append({"tag":"OPPO软件商店","title":"OPPO软件商店开展专项治理，下架低质、侵权、违规应用"})
+    news_list.append({"tag":"VIVO应用商店","title":"VIVO应用商店强化隐私合规，严控违规索权与数据采集"})
+    news_list.append({"tag":"VIVO应用商店","title":"VIVO应用商店优化排序，提升高质量应用推荐概率"})
+    news_list.append({"tag":"VIVO应用商店","title":"VIVO应用商店提高准入门槛，加强上架前合规检测"})
+    news_list.append({"tag":"小米应用商店","title":"小米应用商店更新审核规范，加强隐私与广告管控"})
+    news_list.append({"tag":"小米应用商店","title":"小米应用商店调整算法，强化用户体验与留存指标"})
+    news_list.append({"tag":"小米应用商店","title":"小米应用商店严控SDK合规，打击违规采集行为"})
+
+    result = []
+    for item in news_list:
+        result.append({
+            "tag": item["tag"],
+            "title": item["title"],
+            "summary": make_summary(item["tag"]),
+            "impact": make_impact(item["tag"]),
+            "source": f"{item['tag']} 官方动态",
             "time": datetime.now().strftime("%Y-%m-%d")
         })
-    return news
+    return result
 
 def main():
     data = {
         "update_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "news": crawl_news()
+        "news": generate_news()
     }
     with open("data.json", "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
