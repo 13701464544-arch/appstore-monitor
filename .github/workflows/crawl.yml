@@ -1,4 +1,4 @@
-name: 自动更新
+name: 每60分钟自动更新
 on:
   schedule:
     - cron: "*/60 * * * *"
@@ -10,18 +10,16 @@ permissions:
 jobs:
   run:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Run
+      - name: 直接克隆并执行
         run: |
+          git clone https://github.com/${{ github.repository }}.git app
+          cd app
           python3 spider.py
-
-      - name: Commit
-        run: |
           git config --global user.name "bot"
-          git config --global user.email "bot@example.com"
+          git config --global user.email "bot@github.com"
           git add data.json
-          git commit -m "update" || true
-          git push
+          git commit -m "auto update" || true
+          git push https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:main
