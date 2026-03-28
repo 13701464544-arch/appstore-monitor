@@ -1,4 +1,4 @@
-name: 自动更新情报
+name: 每60分钟自动更新情报
 on:
   schedule:
     - cron: "*/60 * * * *"
@@ -6,24 +6,26 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
   run:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        env:
-          ACTIONS_ALLOW_UNSECURE_NODE_VERSION: true
-
-      - name: 直接运行脚本
-        run: python3 spider.py
-
-      - name: 强制提交（永不报错）
+      - name: 直接执行（无任何 Node.js 动作）
         run: |
-          git config --global user.name "bot"
-          git config --global user.email "bot@github.com"
+          # 安装依赖
+          sudo apt-get update && sudo apt-get install -y python3 git
+          
+          # 克隆仓库
+          git clone https://github.com/${{ github.repository }}.git work
+          cd work
+          
+          # 运行爬虫
+          python3 spider.py
+          
+          # 提交更新（永不报错）
+          git config --global user.name "automation"
+          git config --global user.email "auto@example.com"
           git add data.json
-          git commit -m "update" || true
-          git push || true
+          git commit -m "refresh" || true
+          git push https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:main || true
