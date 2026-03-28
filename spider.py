@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 
 # 全局配置
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
-TARGET_KEYWORDS = ["App Store", "Google Play", "OPPO", "VIVO", "小米", "应用商店", "应用市场", "审核", "合规", "算法", "流量", "分发"]
+TARGET_KEYWORDS = ["App Store", "Google Play", "OPPO软件商店", "VIVO应用商店", "小米应用商店", "应用商店", "应用市场", "审核", "合规", "算法", "流量", "分发"]
 
 # ==============================================
 # 🔥 大模型 AI 生成：摘要 + 影响分析
