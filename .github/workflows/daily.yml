@@ -1,19 +1,22 @@
-name: 每日自动爬取应用商店情报
+name: 每60分钟自动爬取应用商店情报
 on:
-  schedule: [{cron: "0 0 * * *"}]
+  schedule:
+    - cron: "*/60 * * * *"  # 🔥 每60分钟一次
   workflow_dispatch:
+
 jobs:
   run:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: {python-version: "3.10"}
-      - run: pip install -r requirements.txt
+        with:
+          python-version: "3.10"
+      - run: pip install requests beautifulsoup4
       - run: python spider.py
       - run: |
-          git config --global user.name bot
-          git config --global user.email bot@github.com
+          git config --global user.name "bot"
+          git config --global user.email "bot@github.com"
           git add data.json
-          git commit -m "自动更新 $(date +'%Y-%m-%d')"
+          git commit -m "自动更新 $(date +'%Y-%m-%d %H:%M')"
           git push
