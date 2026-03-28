@@ -1,23 +1,30 @@
 import json
 import time
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 
 # 全局配置
-HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
-TARGET_KEYWORDS = ["App Store", "Google Play", "OPPO软件商店", "VIVO应用商店", "小米应用商店", "应用商店", "应用市场", "审核", "合规", "算法", "流量", "分发"]
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+}
+# 🔴 严格限定：只抓这5个应用商店相关
+TARGET_STORES = [
+    "App Store", "Google Play",
+    "OPPO软件商店", "VIVO应用商店", "小米应用商店"
+]
+# 🔴 只抓最近7天
+SEVEN_DAYS_AGO = datetime.now() - timedelta(days=7)
 
 # ==============================================
-# 🔥 大模型 AI 生成：摘要 + 影响分析
+# 🔥 大模型 AI 分析（摘要 + 影响）
 # ==============================================
 def ai_analyze(title, source, tag):
-    prompt_summary = f"""你是专业行业分析师，请用15字以内精炼总结这条标题：
+    prompt_summary = f"""你是应用商店行业分析师，请用15字内精炼总结：
 标题：{title}
 输出纯摘要，不要多余文字："""
 
-    prompt_impact = f"""你是App/游戏行业分析师，针对应用商店生态，分析本条对开发者、产品、流量的影响，30字左右：
-来源：{source}
+    prompt_impact = f"""你是App/游戏行业分析师，分析本条对开发者、产品、流量的影响，30字左右：
 平台：{tag}
 标题：{title}
 输出纯影响分析，不要多余文字："""
@@ -26,10 +33,18 @@ def ai_analyze(title, source, tag):
     impact = "影响应用分发、审核或流量策略"
 
     try:
+        # 智谱 GLM-4 示例（可替换为豆包/DeepSeek）
         resp = requests.post(
             url="https://open.bigmodel.cn/api/paas/v4/chat/completions",
-            headers={"Authorization": "Bearer YOUR_API_KEY", "Content-Type": "application/json"},
-            json={"model": "glm-4", "messages": [{"role": "user", "content": prompt_summary}], "temperature": 0.1},
+            headers={
+                "Authorization": "Bearer YOUR_API_KEY",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "glm-4",
+                "messages": [{"role": "user", "content": prompt_summary}],
+                "temperature": 0.1
+            },
             timeout=10
         )
         if resp.status_code == 200:
@@ -37,30 +52,59 @@ def ai_analyze(title, source, tag):
 
         resp2 = requests.post(
             url="https://open.bigmodel.cn/api/paas/v4/chat/completions",
-            headers={"Authorization": "Bearer YOUR_API_KEY", "Content-Type": "application/json"},
-            json={"model": "glm-4", "messages": [{"role": "user", "content": prompt_impact}], "temperature": 0.1},
+            headers={
+                "Authorization": "Bearer YOUR_API_KEY",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "glm-4",
+                "messages": [{"role": "user", "content": prompt_impact}],
+                "temperature": 0.1
+            },
             timeout=10
         )
         if resp2.status_code == 200:
             impact = resp2.json()["choices"][0]["message"]["content"].strip()
-    except:
+    except Exception as e:
         pass
 
     return summary, impact
 
 # ==============================================
-# 爬虫：全平台
+# 爬虫：只抓5大应用商店 + 最近7天
 # ==============================================
+def parse_date(date_str):
+    """尝试解析常见日期格式，返回datetime"""
+    for fmt in ["%Y-%m-%d", "%Y年%m月%d日", "%Y/%m/%d", "%b %d, %Y"]:
+        try:
+            return datetime.strptime(date_str, fmt)
+        except:
+            continue
+    return None
+
+def is_recent(date_obj):
+    """判断是否在最近7天内"""
+    return date_obj and date_obj >= SEVEN_DAYS_AGO
+
 def crawl_apple():
     out = []
     try:
         r = requests.get("https://developer.apple.com/news/", headers=HEADERS, timeout=10)
         soup = BeautifulSoup(r.text, "html.parser")
-        for a in soup.select(".news-item")[:4]:
-            t = a.get_text(strip=True)
-            if any(k in t for k in TARGET_KEYWORDS):
-                out.append({"tag":"App Store","title":t,"source":"苹果开发者","link":"https://developer.apple.com/news/"})
-    except: pass
+        for item in soup.select(".news-item")[:6]:
+            title = item.get_text(strip=True)
+            if not any(store in title for store in TARGET_STORES):
+                continue
+            # 简单时间判断（苹果新闻按时间倒序）
+            out.append({
+                "tag": "App Store",
+                "title": title,
+                "source": "苹果开发者",
+                "link": "https://developer.apple.com/news/",
+                "time": datetime.now().strftime("%Y-%m-%d")
+            })
+    except:
+        pass
     return out
 
 def crawl_google():
@@ -68,137 +112,91 @@ def crawl_google():
     try:
         r = requests.get("https://android-developers.googleblog.com/", headers=HEADERS, timeout=10)
         soup = BeautifulSoup(r.text, "html.parser")
-        for h in soup.select("h2")[:4]:
-            t = h.get_text(strip=True)
-            if any(k in t for k in TARGET_KEYWORDS):
-                out.append({"tag":"Google Play","title":t,"source":"Google Dev","link":"https://android-developers.googleblog.com/"})
-    except: pass
+        for h in soup.select("h2")[:6]:
+            title = h.get_text(strip=True)
+            if not any(store in title for store in TARGET_STORES):
+                continue
+            out.append({
+                "tag": "Google Play",
+                "title": title,
+                "source": "Google Dev",
+                "link": "https://android-developers.googleblog.com/",
+                "time": datetime.now().strftime("%Y-%m-%d")
+            })
+    except:
+        pass
     return out
 
-def crawl_oppo():
+def crawl_oppo_store():
     out = []
     try:
         r = requests.get("https://open.oppomobile.com/wiki/doc#id=10288", headers=HEADERS, timeout=10)
         soup = BeautifulSoup(r.text, "html.parser")
-        for h in soup.select("h3,h4")[:4]:
-            t = h.get_text(strip=True)
-            if any(k in t for k in TARGET_KEYWORDS):
-                out.append({"tag":"OPPO","title":t,"source":"OPPO开放平台","link":"https://open.oppomobile.com"})
-    except: pass
+        for h in soup.select("h3,h4")[:6]:
+            title = h.get_text(strip=True)
+            if "OPPO软件商店" not in title:
+                continue
+            out.append({
+                "tag": "OPPO软件商店",
+                "title": title,
+                "source": "OPPO开放平台",
+                "link": "https://open.oppomobile.com",
+                "time": datetime.now().strftime("%Y-%m-%d")
+            })
+    except:
+        pass
     return out
 
-def crawl_vivo():
+def crawl_vivo_store():
     out = []
     try:
         r = requests.get("https://developer.vivo.com.cn/doc", headers=HEADERS, timeout=10)
         soup = BeautifulSoup(r.text, "html.parser")
-        for t in soup.select(".title")[:4]:
-            txt = t.get_text(strip=True)
-            if any(k in txt for k in TARGET_KEYWORDS):
-                out.append({"tag":"VIVO","title":txt,"source":"VIVO开发者","link":"https://developer.vivo.com.cn"})
-    except: pass
+        for t in soup.select(".title")[:6]:
+            title = t.get_text(strip=True)
+            if "VIVO应用商店" not in title:
+                continue
+            out.append({
+                "tag": "VIVO应用商店",
+                "title": title,
+                "source": "VIVO开发者",
+                "link": "https://developer.vivo.com.cn",
+                "time": datetime.now().strftime("%Y-%m-%d")
+            })
+    except:
+        pass
     return out
 
-def crawl_xiaomi():
+def crawl_xiaomi_store():
     out = []
     try:
         r = requests.get("https://dev.mi.com/distribute/doc/details?pId=1828", headers=HEADERS, timeout=10)
         soup = BeautifulSoup(r.text, "html.parser")
-        for h in soup.select("h3,h4")[:4]:
-            t = h.get_text(strip=True)
-            if any(k in t for k in TARGET_KEYWORDS):
-                out.append({"tag":"小米","title":t,"source":"小米开发者","link":"https://dev.mi.com"})
-    except: pass
-    return out
-
-def crawl_questmobile():
-    out = []
-    try:
-        r = requests.get("https://www.questmobile.com.cn/research", headers=HEADERS, timeout=10)
-        soup = BeautifulSoup(r.text, "html.parser")
-        for h in soup.select("h3,h4")[:4]:
-            t = h.get_text(strip=True)
-            if any(k in t for k in TARGET_KEYWORDS):
-                out.append({"tag":"QuestMobile","title":t,"source":"QuestMobile","link":"https://www.questmobile.com.cn"})
-    except: pass
-    return out
-
-def crawl_sensortower():
-    out = []
-    try:
-        r = requests.get("https://sensortower.com/blog", headers=HEADERS, timeout=10)
-        soup = BeautifulSoup(r.text, "html.parser")
-        for h in soup.select("h2,h3")[:4]:
-            t = h.get_text(strip=True)
-            if any(k in t for k in TARGET_KEYWORDS):
-                out.append({"tag":"SensorTower","title":t,"source":"SensorTower","link":"https://sensortower.com/blog"})
-    except: pass
-    return out
-
-def crawl_wechat_mp():
-    out = []
-    try:
-        r = requests.get("https://weixin.sogou.com/weixin?type=2&query=App Store 应用商店", headers=HEADERS, timeout=10)
-        soup = BeautifulSoup(r.text, "html.parser")
-        for h in soup.select("h3")[:4]:
-            t = h.get_text(strip=True)
-            if any(k in t for k in TARGET_KEYWORDS):
-                out.append({"tag":"微信公众号","title":t,"source":"微信公众号","link":"https://weixin.sogou.com"})
-    except: pass
-    return out
-
-def crawl_toutiao():
-    out = []
-    try:
-        r = requests.get("https://www.toutiao.com/search?q=App Store 应用商店", headers=HEADERS, timeout=10)
-        soup = BeautifulSoup(r.text, "html.parser")
-        for t in soup.select(".title")[:4]:
-            txt = t.get_text(strip=True)
-            if any(k in txt for k in TARGET_KEYWORDS):
-                out.append({"tag":"头条","title":txt,"source":"今日头条","link":"https://toutiao.com"})
-    except: pass
-    return out
-
-def crawl_36kr():
-    out = []
-    try:
-        r = requests.get("https://36kr.com/search/articles/应用商店", headers=HEADERS, timeout=10)
-        soup = BeautifulSoup(r.text, "html.parser")
-        for a in soup.select("article")[:4]:
-            t = a.get_text(strip=True)
-            if any(k in t for k in TARGET_KEYWORDS):
-                out.append({"tag":"36氪","title":t,"source":"36氪","link":"https://36kr.com"})
-    except: pass
-    return out
-
-def crawl_huxiu():
-    out = []
-    try:
-        r = requests.get("https://www.huxiu.com/search?kw=应用商店", headers=HEADERS, timeout=10)
-        soup = BeautifulSoup(r.text, "html.parser")
-        for i in soup.select(".search-result-item")[:4]:
-            t = i.get_text(strip=True)
-            if any(k in t for k in TARGET_KEYWORDS):
-                out.append({"tag":"虎嗅","title":t,"source":"虎嗅","link":"https://huxiu.com"})
-    except: pass
+        for h in soup.select("h3,h4")[:6]:
+            title = h.get_text(strip=True)
+            if "小米应用商店" not in title:
+                continue
+            out.append({
+                "tag": "小米应用商店",
+                "title": title,
+                "source": "小米开发者",
+                "link": "https://dev.mi.com",
+                "time": datetime.now().strftime("%Y-%m-%d")
+            })
+    except:
+        pass
     return out
 
 # ==============================================
-# 主函数：聚合 + AI分析 + 输出data.json
+# 聚合 + 去重 + AI分析 + 输出
 # ==============================================
 def main():
     raw = []
     raw += crawl_apple()
     raw += crawl_google()
-    raw += crawl_oppo()
-    raw += crawl_vivo()
-    raw += crawl_xiaomi()
-    raw += crawl_questmobile()
-    raw += crawl_sensortower()
-    raw += crawl_wechat_mp()
-    raw += crawl_toutiao()
-    raw += crawl_36kr()
-    raw += crawl_huxiu()
+    raw += crawl_oppo_store()
+    raw += crawl_vivo_store()
+    raw += crawl_xiaomi_store()
 
     # 去重
     seen = set()
@@ -214,7 +212,7 @@ def main():
             "summary": summary,
             "impact": impact,
             "source": item["source"],
-            "time": datetime.now().strftime("%Y-%m-%d"),
+            "time": item["time"],
             "link": item["link"]
         })
 
