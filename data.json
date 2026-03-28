@@ -1,0 +1,14 @@
+{
+  "update_time": "2026-03-28 00:00:00",
+  "news": [
+    {
+      "tag": "App Store",
+      "title": "App Store 强化隐私审核",
+      "summary": "苹果加强权限核验，描述不符将拒审",
+      "source": "Apple Developer",
+      "time": "2026-03-26",
+      "link": "https://developer.apple.com/cn/news/",
+      "impact": "SDK多、权限模糊应用将被重点排查"
+    }
+  ]
+}
