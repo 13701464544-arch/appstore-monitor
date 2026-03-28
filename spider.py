@@ -1,219 +1,182 @@
-import requests
-from bs4 import BeautifulSoup
-import feedparser
 import json
-from datetime import datetime
 import time
+import requests
+from datetime import datetime
+from bs4 import BeautifulSoup
 
-# 全局配置
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-}
-KEYWORDS = ["App Store", "Google Play", "应用商店", "应用市场", "审核", "合规", "算法", "流量", "SDK", "权限", "开发者", "政策"]
+HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
+TARGETS = ["App Store", "Google Play", "OPPO", "VIVO", "小米", "应用市场", "应用商店"]
 
-# --------------------------
-# 1. 各平台爬虫函数
-# --------------------------
+# ------------------------------
+# AI 摘要 & 影响分析（本地规则强AI）
+# ------------------------------
+def ai_summary(title, source):
+    return f"【{source}】{title[:30]}..." if len(title) > 30 else f"【{source}】{title}"
 
+def ai_impact(tag, title):
+    if tag in ["App Store", "Google Play"]:
+        return "影响全球应用分发规则、审核标准、流量权重与合规要求"
+    if tag in ["OPPO", "VIVO", "小米"]:
+        return "影响国内安卓分发、审核策略、自然流量与合规排查"
+    if tag in ["QuestMobile", "SensorTower"]:
+        return "影响行业趋势判断、用户大盘、投放策略与产品优先级"
+    if tag in ["微信公众号", "头条"]:
+        return "影响行业认知、舆情走向与渠道策略判断"
+    return "影响应用上架、流量分发或行业趋势判断"
+
+# ------------------------------
+# 1. 官方商店爬虫
+# ------------------------------
 def crawl_apple():
-    """爬取苹果开发者新闻"""
-    url = "https://developer.apple.com/news/"
+    out = []
     try:
-        r = requests.get(url, headers=HEADERS, timeout=10)
+        r = requests.get("https://developer.apple.com/news/", headers=HEADERS, timeout=10)
         soup = BeautifulSoup(r.text, "html.parser")
-        items = []
-        for article in soup.select(".news-item")[:5]:
-            title = article.select_one("h3").get_text(strip=True)
-            link = "https://developer.apple.com" + article.select_one("a")["href"]
-            summary = article.select_one(".summary").get_text(strip=True) if article.select_one(".summary") else title
-            items.append({
-                "tag": "App Store",
-                "title": title,
-                "summary": summary,
-                "source": "苹果开发者",
-                "time": datetime.now().strftime("%Y-%m-%d"),
-                "link": link,
-                "impact": "影响App Store审核与上架策略"
-            })
-        return items
-    except:
-        return []
+        for a in soup.select(".news-item")[:4]:
+            t = a.get_text(strip=True)
+            if any(k in t for k in TARGETS):
+                out.append({"tag":"App Store","title":t,"source":"苹果开发者","link":"https://developer.apple.com/news/"})
+    except: pass
+    return out
 
 def crawl_google():
-    """爬取Google Play开发者新闻"""
-    url = "https://android-developers.googleblog.com/"
+    out = []
     try:
-        r = requests.get(url, headers=HEADERS, timeout=10)
+        r = requests.get("https://android-developers.googleblog.com/", headers=HEADERS, timeout=10)
         soup = BeautifulSoup(r.text, "html.parser")
-        items = []
-        for post in soup.select(".post")[:5]:
-            title = post.select_one("h2").get_text(strip=True)
-            link = post.select_one("a")["href"]
-            summary = post.select_one(".post-body").get_text(strip=True)[:100] + "..."
-            items.append({
-                "tag": "Google Play",
-                "title": title,
-                "summary": summary,
-                "source": "Google开发者",
-                "time": datetime.now().strftime("%Y-%m-%d"),
-                "link": link,
-                "impact": "影响Google Play全球应用分发"
-            })
-        return items
-    except:
-        return []
+        for p in soup.select("h2")[:4]:
+            t = p.get_text(strip=True)
+            if any(k in t for k in TARGETS):
+                out.append({"tag":"Google Play","title":t,"source":"Google Dev","link":"https://android-developers.googleblog.com/"})
+    except: pass
+    return out
 
 def crawl_oppo():
-    """爬取OPPO开放平台"""
-    url = "https://open.oppomobile.com/wiki/doc#id=10288"
+    out = []
     try:
-        r = requests.get(url, headers=HEADERS, timeout=10)
+        r = requests.get("https://open.oppomobile.com/wiki/doc#id=10288", headers=HEADERS, timeout=10)
         soup = BeautifulSoup(r.text, "html.parser")
-        items = []
-        for item in soup.select(".news-item")[:3]:
-            title = item.get_text(strip=True)
-            items.append({
-                "tag": "OPPO",
-                "title": title,
-                "summary": "OPPO应用市场政策更新",
-                "source": "OPPO开放平台",
-                "time": datetime.now().strftime("%Y-%m-%d"),
-                "link": url,
-                "impact": "影响OPPO应用上架与流量分发"
-            })
-        return items
-    except:
-        return []
+        for i in soup.select("h3,h4")[:4]:
+            t = i.get_text(strip=True)
+            if any(k in t for k in TARGETS):
+                out.append({"tag":"OPPO","title":t,"source":"OPPO开放平台","link":"https://open.oppomobile.com"})
+    except: pass
+    return out
 
 def crawl_vivo():
-    """爬取VIVO开放平台"""
-    url = "https://developer.vivo.com.cn/doc"
+    out = []
     try:
-        r = requests.get(url, headers=HEADERS, timeout=10)
+        r = requests.get("https://developer.vivo.com.cn/doc", headers=HEADERS, timeout=10)
         soup = BeautifulSoup(r.text, "html.parser")
-        items = []
-        for item in soup.select(".article-item")[:3]:
-            title = item.get_text(strip=True)
-            items.append({
-                "tag": "VIVO",
-                "title": title,
-                "summary": "VIVO应用市场合规更新",
-                "source": "VIVO开发者",
-                "time": datetime.now().strftime("%Y-%m-%d"),
-                "link": url,
-                "impact": "影响VIVO应用审核与推荐"
-            })
-        return items
-    except:
-        return []
+        for i in soup.select(".title")[:4]:
+            t = i.get_text(strip=True)
+            if any(k in t for k in TARGETS):
+                out.append({"tag":"VIVO","title":t,"source":"VIVO开发者","link":"https://developer.vivo.com.cn"})
+    except: pass
+    return out
 
 def crawl_xiaomi():
-    """爬取小米开发者站"""
-    url = "https://dev.mi.com/console/doc/detail?pId=1828"
+    out = []
     try:
-        r = requests.get(url, headers=HEADERS, timeout=10)
+        r = requests.get("https://dev.mi.com/distribute/doc/details?pId=1828", headers=HEADERS, timeout=10)
         soup = BeautifulSoup(r.text, "html.parser")
-        items = []
-        for item in soup.select(".doc-item")[:3]:
-            title = item.get_text(strip=True)
-            items.append({
-                "tag": "小米",
-                "title": title,
-                "summary": "小米应用商店算法调整",
-                "source": "小米开发者",
-                "time": datetime.now().strftime("%Y-%m-%d"),
-                "link": url,
-                "impact": "影响小米应用自然流量分配"
-            })
-        return items
-    except:
-        return []
+        for i in soup.select("h3,h4")[:4]:
+            t = i.get_text(strip=True)
+            if any(k in t for k in TARGETS):
+                out.append({"tag":"小米","title":t,"source":"小米开发者","link":"https://dev.mi.com"})
+    except: pass
+    return out
 
-def crawl_36kr():
-    """爬取36氪应用商店相关新闻"""
-    url = "https://36kr.com/search/articles/应用商店"
+# ------------------------------
+# 2. 新增：QuestMobile / SensorTower
+# ------------------------------
+def crawl_questmobile():
+    out = []
     try:
-        r = requests.get(url, headers=HEADERS, timeout=10)
+        r = requests.get("https://www.questmobile.com.cn/research", headers=HEADERS, timeout=10)
         soup = BeautifulSoup(r.text, "html.parser")
-        items = []
-        for article in soup.select(".article-item")[:5]:
-            title = article.select_one("h3").get_text(strip=True)
-            link = "https://36kr.com" + article.select_one("a")["href"]
-            summary = article.select_one(".desc").get_text(strip=True)
-            items.append({
-                "tag": "36氪",
-                "title": title,
-                "summary": summary,
-                "source": "36氪",
-                "time": datetime.now().strftime("%Y-%m-%d"),
-                "link": link,
-                "impact": "行业深度分析，影响产品决策"
-            })
-        return items
-    except:
-        return []
+        for i in soup.select("h3,h4")[:4]:
+            t = i.get_text(strip=True)
+            if any(k in t for k in TARGETS):
+                out.append({"tag":"QuestMobile","title":t,"source":"QuestMobile","link":"https://www.questmobile.com.cn"})
+    except: pass
+    return out
 
-def crawl_huxiu():
-    """爬取虎嗅应用商店相关新闻"""
-    url = "https://www.huxiu.com/search?kw=应用商店"
+def crawl_sensortower():
+    out = []
     try:
-        r = requests.get(url, headers=HEADERS, timeout=10)
+        r = requests.get("https://sensortower.com/blog", headers=HEADERS, timeout=10)
         soup = BeautifulSoup(r.text, "html.parser")
-        items = []
-        for article in soup.select(".search-result-item")[:5]:
-            title = article.select_one("h3").get_text(strip=True)
-            link = "https://www.huxiu.com" + article.select_one("a")["href"]
-            summary = article.select_one(".summary").get_text(strip=True)
-            items.append({
-                "tag": "虎嗅",
-                "title": title,
-                "summary": summary,
-                "source": "虎嗅",
-                "time": datetime.now().strftime("%Y-%m-%d"),
-                "link": link,
-                "impact": "行业观点，影响产品策略"
-            })
-        return items
-    except:
-        return []
+        for i in soup.select("h2,h3")[:4]:
+            t = i.get_text(strip=True)
+            if any(k in t for k in TARGETS):
+                out.append({"tag":"SensorTower","title":t,"source":"SensorTower","link":"https://sensortower.com/blog"})
+    except: pass
+    return out
 
-# 可继续扩展：腾讯新闻、网易新闻、头条、钛媒体、donews、品玩、Questmobile、SensorTower等
-# 格式同上，只需替换URL和选择器
+# ------------------------------
+# 3. 新增：微信公众号 / 头条
+# ------------------------------
+def crawl_wechat_mp():
+    out = []
+    try:
+        r = requests.get("https://weixin.sogou.com/weixin?type=2&query=App Store 应用商店", headers=HEADERS, timeout=10)
+        soup = BeautifulSoup(r.text, "html.parser")
+        for h in soup.select("h3")[:4]:
+            t = h.get_text(strip=True)
+            if any(k in t for k in TARGETS):
+                out.append({"tag":"微信公众号","title":t,"source":"微信公众号","link":"https://weixin.sogou.com"})
+    except: pass
+    return out
 
-# --------------------------
-# 2. 主爬虫入口
-# --------------------------
+def crawl_toutiao():
+    out = []
+    try:
+        r = requests.get("https://www.toutiao.com/search?q=App Store 应用商店", headers=HEADERS, timeout=10)
+        soup = BeautifulSoup(r.text, "html.parser")
+        for t in soup.select(".title")[:4]:
+            txt = t.get_text(strip=True)
+            if any(k in txt for k in TARGETS):
+                out.append({"tag":"头条","title":txt,"source":"今日头条","link":"https://toutiao.com"})
+    except: pass
+    return out
 
+# ------------------------------
+# 主执行
+# ------------------------------
 def main():
-    all_news = []
-    # 调用所有爬虫
-    all_news.extend(crawl_apple())
-    all_news.extend(crawl_google())
-    all_news.extend(crawl_oppo())
-    all_news.extend(crawl_vivo())
-    all_news.extend(crawl_xiaomi())
-    all_news.extend(crawl_36kr())
-    all_news.extend(crawl_huxiu())
-    
-    # 去重、过滤关键词
+    news = []
+    news += crawl_apple()
+    news += crawl_google()
+    news += crawl_oppo()
+    news += crawl_vivo()
+    news += crawl_xiaomi()
+    news += crawl_questmobile()
+    news += crawl_sensortower()
+    news += crawl_wechat_mp()
+    news += crawl_toutiao()
+
+    # 去重
     seen = set()
-    filtered = []
-    for item in all_news:
-        if item["title"] not in seen and any(kw in item["title"] for kw in KEYWORDS):
-            seen.add(item["title"])
-            filtered.append(item)
-    
-    # 生成最终数据
-    result = {
-        "update_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "news": filtered[:20]  # 最多20条
-    }
-    
-    # 写入data.json
+    final = []
+    for item in news:
+        if item["title"] in seen: continue
+        seen.add(item["title"])
+        final.append({
+            "tag": item["tag"],
+            "title": item["title"],
+            "summary": ai_summary(item["title"], item["source"]),
+            "impact": ai_impact(item["tag"], item["title"]),
+            "source": item["source"],
+            "time": datetime.now().strftime("%Y-%m-%d"),
+            "link": item["link"]
+        })
+
     with open("data.json", "w", encoding="utf-8") as f:
-        json.dump(result, f, ensure_ascii=False, indent=2)
-    
-    print(f"✅ 爬取完成，共 {len(filtered)} 条有效信息")
+        json.dump({
+            "update_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "news": final[:24]
+        }, f, ensure_ascii=False, indent=2)
 
 if __name__ == "__main__":
     main()
