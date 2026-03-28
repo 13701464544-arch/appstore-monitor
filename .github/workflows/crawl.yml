@@ -1,4 +1,4 @@
-name: 自动更新情报
+name: 每60分钟自动更新情报
 on:
   schedule:
     - cron: "*/60 * * * *"
@@ -11,13 +11,18 @@ jobs:
   run:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Run
-        run: python3 spider.py
-      - name: Commit
+      - name: 全自动更新（无任何 Node.js 插件）
         run: |
-          git config --global user.name "bot"
-          git config --global user.email "bot@github.com"
+          # 克隆项目
+          git clone https://github.com/${{ github.repository }}.git work
+          cd work
+
+          # 运行爬虫生成数据
+          python3 spider.py
+
+          # 提交并推送（永不报错）
+          git config --global user.name "auto-bot"
+          git config --global user.email "auto@bot.com"
           git add data.json
-          git commit -m "update" || true
-          git push || true
+          git commit -m "数据自动更新" || true
+          git push https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:main || true
